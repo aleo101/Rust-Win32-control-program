@@ -98,10 +98,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                         30,
                     );
                     let percentage_to_open_str = text.to_string();
-                    PERCENTAGE_TO_OPEN = match percentage_to_open_str.parse::<i32>() {
-                        Ok(i) => i,
-                        Err(_) => 0,
-                    };
+                    PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
                     LRESULT(0)
                 }
                 ID_BTN_ST => {
@@ -122,10 +119,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                         30,
                     );
                     let percentage_to_open_str = text.to_string();
-                    PERCENTAGE_TO_OPEN = match percentage_to_open_str.parse::<i32>() {
-                        Ok(i) => i,
-                        Err(_) => 0,
-                    };
+                    PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
                     let string = format!("{}", PERCENTAGE_TO_OPEN + 10);
                     let str_ref = string.as_str();
                     let mut w_str = WString::from_str(str_ref);
@@ -140,10 +134,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                         30,
                     );
                     let percentage_to_open_str = text.to_string();
-                    PERCENTAGE_TO_OPEN = match percentage_to_open_str.parse::<i32>() {
-                        Ok(i) => i,
-                        Err(_) => 0,
-                    };
+                    PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
                     let string = format!("{}", std::cmp::max(0, PERCENTAGE_TO_OPEN - 10));
                     let str_ref = string.as_str();
                     SetWindowTextW(
@@ -180,10 +171,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                         30,
                     );
                     let percentage_to_open_str = text.to_string();
-                    TIME = match percentage_to_open_str.parse::<i32>() {
-                        Ok(i) => i,
-                        Err(_) => 0,
-                    } - 1;
+                    TIME = percentage_to_open_str.parse::<i32>().unwrap_or(0) - 1;
                     if TIME < 1 {
                         KillTimer(window, IDT_TIMER1 as usize);
                     }
@@ -197,15 +185,16 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                 }
                 _ => LRESULT(0),
             },
-            WM_PARENTNOTIFY => match ((wparam.0 as u64) as u16 & 0xffff) as u32 {
+            WM_PARENTNOTIFY => match (wparam.0 as u64) as u16 as u32 {
                 WM_CREATE => {
                     HWNDS.insert(
-                        (((wparam.0 as u64) >> 16) as u16 & 0xffff) as usize,
+                        ((wparam.0 as u64) >> 16) as u16 as usize,
                         HWND(lparam.0),
                     );
                     println!(
-                        "insert working: {}",
-                        (((wparam.0 as u64) >> 16) as u16 & 0xffff) as u32
+                        "insert working: {} : {}.",
+                        ((wparam.0 as u64) >> 16) as u16 as u32, 
+                        HWND(lparam.0).0,
                     );
                     LRESULT(0)
                 }
@@ -254,7 +243,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
 //     GetWindowLongPtrA(window, index)
 // }
 
-unsafe fn reset_windows(hWnd: HWND, hwnds: &Vec<HWND>) {
+unsafe fn reset_windows(hWnd: HWND, hwnds: &[HWND]) {
     let str_reset = "reset";
     SetWindowTextW(hwnds.get(ID_TXT_STATUS as usize).unwrap(), str_reset);
     SetWindowTextW(hwnds.get(ID_TXT_TIME as usize).unwrap(), str_reset);
@@ -262,12 +251,12 @@ unsafe fn reset_windows(hWnd: HWND, hwnds: &Vec<HWND>) {
     let hhand = hwnds.get(ID_TXT_TIME as usize).unwrap();
     if !IsWindowEnabled(hhand).as_bool() {
         KillTimer(hWnd, IDT_TIMER1 as usize);
-        EnableWindow(hWnd, true);
+        EnableWindow(hhand, true);
     }
 }
 
 unsafe fn AddControls(hWnd: HWND) {
-    let name = "no name";
+    let name = "0";
 
     CreateWindowExW(
         WS_EX_RIGHT,
