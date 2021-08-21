@@ -10,16 +10,10 @@ use bindings::Windows::Win32::{
     Foundation::*, System::LibraryLoader::*, UI::Controls::*, UI::KeyboardAndMouseInput::*,
     UI::WindowsAndMessaging::*,
 };
-
 use std::str;
 use winsafe::WString;
-//use windows::*;
-// const ID_FILE_MENU_NEW: u32 = 40001;
-// const ID_FILE_MENU_OPEN: u32 = 40002;
-// const ID_FILE_MENU_EXIT: u32 = 40003;
-// const ID_LBL_NAME: u32 = 100;
+
 const ID_TXT_STATUS: u32 = 1;
-// const ID_LBL_AGE: u32 = 102;
 const ID_TXT_OPEN: u32 = 3;
 const ID_BTN_RST: u32 = 4;
 const ID_BTN_CNFM: u32 = 5;
@@ -29,12 +23,17 @@ const ID_BTN_INCR: u32 = 8;
 const ID_BTN_DECR: u32 = 9;
 const IDT_TIMER1: u32 = 10;
 const ID_TB_SCROLL: u32 = 11;
+static mut HANDLE_OPEN: HWND = HWND(0);
+static mut HANDLE_RST: HWND = HWND(0);
+static mut HANDLE_CNFM: HWND = HWND(0);
+static mut HANDLE_TIME: HWND = HWND(0);
+static mut HANDLE_ST: HWND = HWND(0);
+static mut HANDLE_INCR: HWND = HWND(0);
+static mut HANDLE_DECR: HWND = HWND(0);
+static mut HANDLE_STATUS: HWND = HWND(0);
+static mut HANDLE_TB: HWND = HWND(0);
 
 fn main() {
-    run();
-}
-
-fn run() {
     unsafe {
         let instance = GetModuleHandleW(None);
         debug_assert!(instance.0 != 0);
@@ -68,7 +67,6 @@ fn run() {
         );
 
         debug_assert!(handle.0 != 0);
-        //debug_assert!(handle == self.handle);
         let mut message = MSG::default();
         ShowWindow(handle, SW_SHOW);
         while GetMessageW(&mut message, HWND(0), 0, 0).into() {
@@ -80,7 +78,6 @@ fn run() {
 
 extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
-        static mut HWNDS: Vec<HWND> = vec![];
         let mut text = WString::new_alloc_buffer(60);
         let privilege_name_ptr = PWSTR(text.as_mut_ptr());
         static mut PERCENTAGE_TO_OPEN: i32 = 0;
@@ -88,21 +85,18 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
         match message {
             WM_COMMAND => match wparam.0 as u32 {
                 ID_BTN_RST => {
-                    reset_windows(window, &HWNDS);
+                    reset_windows(window);
                     LRESULT(0)
                 }
                 ID_BTN_CNFM => {
-                    GetWindowTextW(
-                        HWNDS.get(ID_TXT_OPEN as usize).unwrap(),
-                        privilege_name_ptr,
-                        30,
-                    );
+                    GetWindowTextW(HANDLE_OPEN, privilege_name_ptr, 30);
+                    SetWindowTextW(HANDLE_TIME, privilege_name_ptr);
                     let percentage_to_open_str = text.to_string();
                     PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
                     LRESULT(0)
                 }
                 ID_BTN_ST => {
-                    let hhand = HWNDS.get(ID_TXT_TIME as usize).unwrap();
+                    let hhand = HANDLE_TIME;
                     if IsWindowEnabled(hhand).as_bool() {
                         EnableWindow(hhand, false);
                         SetTimer(window, IDT_TIMER1 as usize, 1000, None);
@@ -113,96 +107,56 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                     LRESULT(0)
                 }
                 ID_BTN_INCR => {
-                    GetWindowTextW(
-                        HWNDS.get(ID_TXT_OPEN as usize).unwrap(),
-                        privilege_name_ptr,
-                        30,
-                    );
+                    GetWindowTextW(HANDLE_OPEN, privilege_name_ptr, 30);
                     let percentage_to_open_str = text.to_string();
                     PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
                     let string = format!("{}", PERCENTAGE_TO_OPEN + 10);
                     let str_ref = string.as_str();
                     let mut w_str = WString::from_str(str_ref);
                     let w_str = w_str.as_mut_ptr();
-                    SetWindowTextW(HWNDS.get(ID_TXT_OPEN as usize).unwrap(), PWSTR(w_str));
+                    SetWindowTextW(HANDLE_OPEN, PWSTR(w_str));
                     LRESULT(0)
                 }
                 ID_BTN_DECR => {
-                    GetWindowTextW(
-                        HWNDS.get(ID_TXT_OPEN as usize).unwrap(),
-                        privilege_name_ptr,
-                        30,
-                    );
+                    GetWindowTextW(HANDLE_OPEN, privilege_name_ptr, 30);
                     let percentage_to_open_str = text.to_string();
                     PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
                     let string = format!("{}", std::cmp::max(0, PERCENTAGE_TO_OPEN - 10));
                     let str_ref = string.as_str();
-                    SetWindowTextW(
-                        HWNDS.get(ID_TXT_OPEN as usize).unwrap(),
-                        PWSTR(WString::from_str(str_ref).as_mut_ptr()),
-                    );
+                    SetWindowTextW(HANDLE_OPEN, PWSTR(WString::from_str(str_ref).as_mut_ptr()));
                     LRESULT(0)
                 }
                 _ => LRESULT(0),
             },
             WM_HSCROLL => {
-                if HWND(lparam.0) == *HWNDS.get(ID_TB_SCROLL as usize).unwrap() {
-                    let dwPos = SendMessageW(
-                        HWNDS.get(ID_TB_SCROLL as usize).unwrap(),
-                        WM_USER,
-                        WPARAM::default(),
-                        LPARAM::default(),
-                    );
+                if HWND(lparam.0) == HANDLE_TB {
+                    let dwPos =
+                        SendMessageW(HANDLE_TB, WM_USER, WPARAM::default(), LPARAM::default());
                     let dw = dwPos.0;
                     let string = format!("{}", dw);
                     let str_ref = string.as_str();
-                    SetWindowTextW(
-                        HWNDS.get(ID_TXT_TIME as usize).unwrap(),
-                        PWSTR(WString::from_str(str_ref).as_mut_ptr()),
-                    );
+                    SetWindowTextW(HANDLE_TIME, PWSTR(WString::from_str(str_ref).as_mut_ptr()));
                 }
                 LRESULT(0)
             }
             WM_TIMER => match wparam.0 as u32 {
                 IDT_TIMER1 => {
-                    GetWindowTextW(
-                        HWNDS.get(ID_TXT_TIME as usize).unwrap(),
-                        privilege_name_ptr,
-                        30,
-                    );
+                    GetWindowTextW(HANDLE_TIME, privilege_name_ptr, 30);
                     let percentage_to_open_str = text.to_string();
                     TIME = percentage_to_open_str.parse::<i32>().unwrap_or(0) - 1;
                     if TIME < 1 {
                         KillTimer(window, IDT_TIMER1 as usize);
-                        EnableWindow(HWNDS.get(ID_TXT_TIME as usize).unwrap(), true);
+                        EnableWindow(HANDLE_TIME, true);
                     }
                     let string = format!("{}", std::cmp::max(0, TIME));
                     let str_ref = string.as_str();
-                    SetWindowTextW(
-                        HWNDS.get(ID_TXT_TIME as usize).unwrap(),
-                        PWSTR(WString::from_str(str_ref).as_mut_ptr()),
-                    );
+                    SetWindowTextW(HANDLE_TIME, PWSTR(WString::from_str(str_ref).as_mut_ptr()));
                     LRESULT(0)
                 }
                 _ => LRESULT(0),
             },
-            WM_PARENTNOTIFY => match (wparam.0 as u64) as u16 as u32 {
-                WM_CREATE => {
-                    HWNDS.insert(
-                        ((wparam.0 as u64) >> 16) as u16 as usize,
-                        HWND(lparam.0),
-                    );
-                    println!(
-                        "insert working: {} : {}.",
-                        ((wparam.0 as u64) >> 16) as u16 as u32, 
-                        HWND(lparam.0).0,
-                    );
-                    LRESULT(0)
-                }
-                _ => LRESULT(0),
-            },
+
             WM_CREATE => {
-                HWNDS = vec![HWND::default(); 10];
                 AddControls(window);
                 LRESULT(0)
             }
@@ -212,44 +166,15 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
             }
             _ => DefWindowProcW(window, message, wparam, lparam),
         }
-        // if message == WM_NCCREATE {
-        //     let cs = lparam.0 as *const CREATESTRUCTA;
-        //     let this = (*cs).lpCreateParams as *mut Self;
-        //     (*this).handle = window;
-        //     SetWindowLong(window, GWLP_USERDATA, this as _);
-        // } else {
-        //     let this = GetWindowLong(window, GWLP_USERDATA) as *mut Self;
-        //     if !this.is_null() {
-        //         return (*this).message_handler(message, wparam, lparam);
-        //     }
-        // }
     }
 }
 
-// #[allow(non_snake_case)]
-// #[cfg(target_pointer_width = "64")]
-// unsafe fn SetWindowLong(window: HWND, index: WINDOW_LONG_PTR_INDEX, value: isize) -> isize {
-//     SetWindowLongPtrA(window, index, value)
-// }
-
-// #[allow(non_snake_case)]
-// #[cfg(target_pointer_width = "32")]
-// unsafe fn GetWindowLong(window: HWND, index: WINDOW_LONG_PTR_INDEX) -> isize {
-//     GetWindowLongA(window, index) as _
-// }
-
-// #[allow(non_snake_case)]
-// #[cfg(target_pointer_width = "64")]
-// unsafe fn GetWindowLong(window: HWND, index: WINDOW_LONG_PTR_INDEX) -> isize {
-//     GetWindowLongPtrA(window, index)
-// }
-
-unsafe fn reset_windows(hWnd: HWND, HWNDS: &[HWND]) {
+unsafe fn reset_windows(hWnd: HWND) {
     let str_reset = "reset";
-    SetWindowTextW(HWNDS.get(ID_TXT_STATUS as usize).unwrap(), str_reset);
-    SetWindowTextW(HWNDS.get(ID_TXT_TIME as usize).unwrap(), str_reset);
-    SetWindowTextW(HWNDS.get(ID_TXT_OPEN as usize).unwrap(), str_reset);
-    let hhand = HWNDS.get(ID_TXT_TIME as usize).unwrap();
+    SetWindowTextW(HANDLE_STATUS, str_reset);
+    SetWindowTextW(HANDLE_TIME, str_reset);
+    SetWindowTextW(HANDLE_OPEN, str_reset);
+    let hhand = HANDLE_TIME;
     if !IsWindowEnabled(hhand).as_bool() {
         KillTimer(hWnd, IDT_TIMER1 as usize);
         EnableWindow(hhand, true);
@@ -259,7 +184,7 @@ unsafe fn reset_windows(hWnd: HWND, HWNDS: &[HWND]) {
 unsafe fn AddControls(hWnd: HWND) {
     let name = "0";
 
-    CreateWindowExW(
+    HANDLE_RST = CreateWindowExW(
         WS_EX_RIGHT,
         "Button",
         "Reset",
@@ -273,7 +198,7 @@ unsafe fn AddControls(hWnd: HWND) {
         GetModuleHandleW(None),
         std::ptr::null_mut(),
     );
-    CreateWindowExW(
+    HANDLE_CNFM = CreateWindowExW(
         WS_EX_RIGHT,
         "Button",
         "Confirm",
@@ -287,7 +212,7 @@ unsafe fn AddControls(hWnd: HWND) {
         GetModuleHandleW(None),
         std::ptr::null_mut(),
     );
-    CreateWindowExW(
+    HANDLE_ST = CreateWindowExW(
         WS_EX_RIGHT,
         "Button",
         "Set Time",
@@ -301,7 +226,7 @@ unsafe fn AddControls(hWnd: HWND) {
         GetModuleHandleW(None),
         std::ptr::null_mut(),
     );
-    CreateWindowExW(
+    HANDLE_STATUS = CreateWindowExW(
         WS_EX_CLIENTEDGE,
         "edit",
         name,
@@ -315,7 +240,7 @@ unsafe fn AddControls(hWnd: HWND) {
         GetModuleHandleW(None),
         std::ptr::null_mut(),
     );
-    CreateWindowExW(
+    HANDLE_OPEN = CreateWindowExW(
         WS_EX_CLIENTEDGE,
         "edit",
         name,
@@ -329,7 +254,7 @@ unsafe fn AddControls(hWnd: HWND) {
         GetModuleHandleW(None),
         std::ptr::null_mut(),
     );
-    CreateWindowExW(
+    HANDLE_TIME = CreateWindowExW(
         WS_EX_CLIENTEDGE,
         "edit",
         name,
@@ -343,7 +268,7 @@ unsafe fn AddControls(hWnd: HWND) {
         GetModuleHandleW(None),
         std::ptr::null_mut(),
     );
-    CreateWindowExW(
+    HANDLE_DECR = CreateWindowExW(
         WS_EX_RIGHT,
         "Button",
         "decr",
@@ -357,7 +282,7 @@ unsafe fn AddControls(hWnd: HWND) {
         GetModuleHandleW(None),
         std::ptr::null_mut(),
     );
-    CreateWindowExW(
+    HANDLE_INCR = CreateWindowExW(
         WS_EX_RIGHT,
         "Button",
         "incr",
@@ -371,8 +296,7 @@ unsafe fn AddControls(hWnd: HWND) {
         GetModuleHandleW(None),
         std::ptr::null_mut(),
     );
-    //CreateWindowExW(0, TRACKBAR_CLASS, ("Scrolly"), WS_VISIBLE|WS_CHILD| TBS_AUTOTICKS | TBS_ENABLESELRANGE, 210, 380, 200, 40, hWnd, HMENU(ID_TB_SCROLL), instance, std::ptr::null_mut());
-    CreateTrackbar(hWnd, 10, 200, 10, 200);
+    HANDLE_TB = CreateTrackbar(hWnd, 10, 200, 10, 200);
 }
 
 unsafe fn CreateTrackbar(hwndDlg: HWND, iMin: u32, iMax: u32, iSelMin: u32, iSelMax: u32) -> HWND {
