@@ -80,32 +80,32 @@ fn run() {
 
 extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
-        static mut hwnds: Vec<HWND> = vec![];
+        static mut HWNDS: Vec<HWND> = vec![];
         let mut text = WString::new_alloc_buffer(60);
         let privilege_name_ptr = PWSTR(text.as_mut_ptr());
-        static mut percentage_to_open: i32 = 0;
-        static mut time: i32 = 0;
+        static mut PERCENTAGE_TO_OPEN: i32 = 0;
+        static mut TIME: i32 = 0;
         match message {
             WM_COMMAND => match wparam.0 as u32 {
                 ID_BTN_RST => {
-                    reset_windows(window, &hwnds);
+                    reset_windows(window, &HWNDS);
                     LRESULT(0)
                 }
                 ID_BTN_CNFM => {
                     GetWindowTextW(
-                        hwnds.get(ID_TXT_OPEN as usize).unwrap(),
+                        HWNDS.get(ID_TXT_OPEN as usize).unwrap(),
                         privilege_name_ptr,
                         30,
                     );
                     let percentage_to_open_str = text.to_string();
-                    percentage_to_open = match percentage_to_open_str.parse::<i32>() {
+                    PERCENTAGE_TO_OPEN = match percentage_to_open_str.parse::<i32>() {
                         Ok(i) => i,
                         Err(_) => 0,
                     };
                     LRESULT(0)
                 }
                 ID_BTN_ST => {
-                    let hhand = hwnds.get(ID_TXT_TIME as usize).unwrap();
+                    let hhand = HWNDS.get(ID_TXT_TIME as usize).unwrap();
                     if IsWindowEnabled(hhand).as_bool() {
                         EnableWindow(hhand, false);
                         SetTimer(window, IDT_TIMER1 as usize, 1000, None);
@@ -117,37 +117,37 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                 }
                 ID_BTN_INCR => {
                     GetWindowTextW(
-                        hwnds.get(ID_TXT_OPEN as usize).unwrap(),
+                        HWNDS.get(ID_TXT_OPEN as usize).unwrap(),
                         privilege_name_ptr,
                         30,
                     );
                     let percentage_to_open_str = text.to_string();
-                    percentage_to_open = match percentage_to_open_str.parse::<i32>() {
+                    PERCENTAGE_TO_OPEN = match percentage_to_open_str.parse::<i32>() {
                         Ok(i) => i,
                         Err(_) => 0,
                     };
-                    let string = format!("{}", percentage_to_open + 10);
+                    let string = format!("{}", PERCENTAGE_TO_OPEN + 10);
                     let str_ref = string.as_str();
                     let mut w_str = WString::from_str(str_ref);
                     let w_str = w_str.as_mut_ptr();
-                    SetWindowTextW(hwnds.get(ID_TXT_OPEN as usize).unwrap(), PWSTR(w_str));
+                    SetWindowTextW(HWNDS.get(ID_TXT_OPEN as usize).unwrap(), PWSTR(w_str));
                     LRESULT(0)
                 }
                 ID_BTN_DECR => {
                     GetWindowTextW(
-                        hwnds.get(ID_TXT_OPEN as usize).unwrap(),
+                        HWNDS.get(ID_TXT_OPEN as usize).unwrap(),
                         privilege_name_ptr,
                         30,
                     );
                     let percentage_to_open_str = text.to_string();
-                    percentage_to_open = match percentage_to_open_str.parse::<i32>() {
+                    PERCENTAGE_TO_OPEN = match percentage_to_open_str.parse::<i32>() {
                         Ok(i) => i,
                         Err(_) => 0,
                     };
-                    let string = format!("{}", std::cmp::max(0, percentage_to_open - 10));
+                    let string = format!("{}", std::cmp::max(0, PERCENTAGE_TO_OPEN - 10));
                     let str_ref = string.as_str();
                     SetWindowTextW(
-                        hwnds.get(ID_TXT_OPEN as usize).unwrap(),
+                        HWNDS.get(ID_TXT_OPEN as usize).unwrap(),
                         PWSTR(WString::from_str(str_ref).as_mut_ptr()),
                     );
                     LRESULT(0)
@@ -155,9 +155,9 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                 _ => LRESULT(0),
             },
             WM_HSCROLL => {
-                if HWND(lparam.0) == *hwnds.get(ID_TB_SCROLL as usize).unwrap() {
+                if HWND(lparam.0) == *HWNDS.get(ID_TB_SCROLL as usize).unwrap() {
                     let dwPos = SendMessageW(
-                        hwnds.get(ID_TB_SCROLL as usize).unwrap(),
+                        HWNDS.get(ID_TB_SCROLL as usize).unwrap(),
                         WM_USER,
                         WPARAM::default(),
                         LPARAM::default(),
@@ -166,7 +166,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                     let string = format!("{}", dw);
                     let str_ref = string.as_str();
                     SetWindowTextW(
-                        hwnds.get(ID_TXT_TIME as usize).unwrap(),
+                        HWNDS.get(ID_TXT_TIME as usize).unwrap(),
                         PWSTR(WString::from_str(str_ref).as_mut_ptr()),
                     );
                 }
@@ -175,22 +175,22 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
             WM_TIMER => match wparam.0 as u32 {
                 IDT_TIMER1 => {
                     GetWindowTextW(
-                        hwnds.get(ID_TXT_TIME as usize).unwrap(),
+                        HWNDS.get(ID_TXT_TIME as usize).unwrap(),
                         privilege_name_ptr,
                         30,
                     );
                     let percentage_to_open_str = text.to_string();
-                    time = match percentage_to_open_str.parse::<i32>() {
+                    TIME = match percentage_to_open_str.parse::<i32>() {
                         Ok(i) => i,
                         Err(_) => 0,
                     } - 1;
-                    if time < 1 {
+                    if TIME < 1 {
                         KillTimer(window, IDT_TIMER1 as usize);
                     }
-                    let string = format!("{}", std::cmp::max(0, time));
+                    let string = format!("{}", std::cmp::max(0, TIME));
                     let str_ref = string.as_str();
                     SetWindowTextW(
-                        hwnds.get(ID_TXT_TIME as usize).unwrap(),
+                        HWNDS.get(ID_TXT_TIME as usize).unwrap(),
                         PWSTR(WString::from_str(str_ref).as_mut_ptr()),
                     );
                     LRESULT(0)
@@ -199,7 +199,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
             },
             WM_PARENTNOTIFY => match ((wparam.0 as u64) as u16 & 0xffff) as u32 {
                 WM_CREATE => {
-                    hwnds.insert(
+                    HWNDS.insert(
                         (((wparam.0 as u64) >> 16) as u16 & 0xffff) as usize,
                         HWND(lparam.0),
                     );
@@ -212,7 +212,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                 _ => LRESULT(0),
             },
             WM_CREATE => {
-                hwnds = vec![HWND::default(); 10];
+                HWNDS = vec![HWND::default(); 10];
                 AddControls(window);
                 LRESULT(0)
             }
