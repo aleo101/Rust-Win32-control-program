@@ -174,6 +174,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                     TIME = percentage_to_open_str.parse::<i32>().unwrap_or(0) - 1;
                     if TIME < 1 {
                         KillTimer(window, IDT_TIMER1 as usize);
+                        EnableWindow(HWNDS.get(ID_TXT_TIME as usize).unwrap(), true);
                     }
                     let string = format!("{}", std::cmp::max(0, TIME));
                     let str_ref = string.as_str();
@@ -243,12 +244,12 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
 //     GetWindowLongPtrA(window, index)
 // }
 
-unsafe fn reset_windows(hWnd: HWND, hwnds: &[HWND]) {
+unsafe fn reset_windows(hWnd: HWND, HWNDS: &[HWND]) {
     let str_reset = "reset";
-    SetWindowTextW(hwnds.get(ID_TXT_STATUS as usize).unwrap(), str_reset);
-    SetWindowTextW(hwnds.get(ID_TXT_TIME as usize).unwrap(), str_reset);
-    SetWindowTextW(hwnds.get(ID_TXT_OPEN as usize).unwrap(), str_reset);
-    let hhand = hwnds.get(ID_TXT_TIME as usize).unwrap();
+    SetWindowTextW(HWNDS.get(ID_TXT_STATUS as usize).unwrap(), str_reset);
+    SetWindowTextW(HWNDS.get(ID_TXT_TIME as usize).unwrap(), str_reset);
+    SetWindowTextW(HWNDS.get(ID_TXT_OPEN as usize).unwrap(), str_reset);
+    let hhand = HWNDS.get(ID_TXT_TIME as usize).unwrap();
     if !IsWindowEnabled(hhand).as_bool() {
         KillTimer(hWnd, IDT_TIMER1 as usize);
         EnableWindow(hhand, true);
