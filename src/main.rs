@@ -123,7 +123,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                     PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
                     let string = format!("{}", std::cmp::max(0, PERCENTAGE_TO_OPEN - 10));
                     let str_ref = string.as_str();
-                    SetWindowTextW(HANDLE_OPEN, PWSTR(WString::from_str(str_ref).as_mut_ptr()));
+                    SetWindowTextW(HANDLE_OPEN, str_ref);
                     LRESULT(0)
                 }
                 _ => LRESULT(0),
@@ -135,7 +135,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                     let dw = dwPos.0;
                     let string = format!("{}", dw);
                     let str_ref = string.as_str();
-                    SetWindowTextW(HANDLE_TIME, PWSTR(WString::from_str(str_ref).as_mut_ptr()));
+                    SetWindowTextW(HANDLE_TIME, str_ref);
                 }
                 LRESULT(0)
             }
@@ -147,10 +147,12 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                     if TIME < 1 {
                         KillTimer(window, IDT_TIMER1 as usize);
                         EnableWindow(HANDLE_TIME, true);
+                        SetWindowTextW(HANDLE_TIME, "0");
+                    } else {
+                        let string = TIME.to_string();
+                        let str_ref = string.as_str();
+                        SetWindowTextW(HANDLE_TIME, str_ref);
                     }
-                    let string = format!("{}", std::cmp::max(0, TIME));
-                    let str_ref = string.as_str();
-                    SetWindowTextW(HANDLE_TIME, PWSTR(WString::from_str(str_ref).as_mut_ptr()));
                     LRESULT(0)
                 }
                 _ => LRESULT(0),
@@ -172,7 +174,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
 unsafe fn reset_windows(hWnd: HWND) {
     let str_reset = "reset";
     SetWindowTextW(HANDLE_STATUS, str_reset);
-    SetWindowTextW(HANDLE_TIME, str_reset);
+    SetWindowTextW(HANDLE_TIME, "0");
     SetWindowTextW(HANDLE_OPEN, str_reset);
     let hhand = HANDLE_TIME;
     if !IsWindowEnabled(hhand).as_bool() {
