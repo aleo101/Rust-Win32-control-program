@@ -3,6 +3,15 @@ Windows API (Win32) program written in Rust to get practice with Rust and Window
 
 I believe this project can help you get started on making your own Windows API application in Rust!
 
+## Getting Started:
+This should run on any windows computer that has Rust installed. 
+Simply run the program using: 
+```rust
+cargo build
+cargo run
+```
+If all goes to plan, the executable (.exe) will be compiled and the GUI should pop up as a window.
+
 ## What is it?
 This Windows GUI application is written in Rust using the new officially supported``windows`` crate [(link to crate)](https://github.com/microsoft/windows-rs).
 
