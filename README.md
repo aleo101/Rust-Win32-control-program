@@ -5,8 +5,8 @@ I believe this project can help you get started on making your own Windows API a
 
 ## Getting Started:
 This should run on any windows computer that has Rust installed. 
-Simply run the program using: 
-```rust
+Run the program by navigating to the directory in PowerShell and run the commands: 
+```cmd
 cargo build
 cargo run
 ```
