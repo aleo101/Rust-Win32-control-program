@@ -20,6 +20,6 @@ The program works by making calls directly to Windows API user interface functio
 
 ## Currently includes:
   - Buttons.
-  - Edit fields (editable text-boxes).
+  - Edit control fields (editable text-boxes).
   - A scroll-bar (slider control bar).
  
