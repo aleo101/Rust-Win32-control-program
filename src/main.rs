@@ -70,8 +70,8 @@ fn main() {
         let mut message = MSG::default();
         ShowWindow(handle, SW_SHOW);
         while GetMessageW(&mut message, HWND(0), 0, 0).into() {
-            TranslateMessage(&mut message);
-            DispatchMessageW(&mut message);
+            TranslateMessage(&message);
+            DispatchMessageW(&message);
         }
     }
 }
@@ -83,52 +83,75 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
         static mut PERCENTAGE_TO_OPEN: i32 = 0;
         static mut TIME: i32 = 0;
         match message {
-            WM_COMMAND => match wparam.0 as u32 {
-                ID_BTN_RST => {
-                    reset_windows(window);
-                    LRESULT(0)
-                }
-                ID_BTN_CNFM => {
-                    GetWindowTextW(HANDLE_OPEN, privilege_name_ptr, 30);
-                    restart_timer(window);
-                    SetWindowTextW(HANDLE_TIME, privilege_name_ptr);
-                    let percentage_to_open_str = text.to_string();
-                    PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
-                    LRESULT(0)
-                }
-                ID_BTN_ST => {
-                    let hhand = HANDLE_TIME;
-                    if IsWindowEnabled(hhand).as_bool() {
-                        EnableWindow(hhand, false);
-                        SetTimer(window, IDT_TIMER1 as usize, 1000, None);
-                    } else {
-                        KillTimer(window, IDT_TIMER1 as usize);
-                        EnableWindow(hhand, true);
+            WM_COMMAND => {
+                match wparam.0 as u32 {
+                    ID_BTN_RST => {
+                        reset_windows(window);
+                        return LRESULT(0);
                     }
-                    LRESULT(0)
+                    ID_BTN_CNFM => {
+                        GetWindowTextW(HANDLE_OPEN, privilege_name_ptr, 30);
+                        restart_timer(window);
+                        SetWindowTextW(HANDLE_TIME, privilege_name_ptr);
+                        let percentage_to_open_str = text.to_string();
+                        PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
+                        return LRESULT(0);
+                    }
+                    ID_BTN_ST => {
+                        let hhand = HANDLE_TIME;
+                        if IsWindowEnabled(hhand).as_bool() {
+                            EnableWindow(hhand, false);
+                            SetTimer(window, IDT_TIMER1 as usize, 1000, None);
+                        } else {
+                            KillTimer(window, IDT_TIMER1 as usize);
+                            EnableWindow(hhand, true);
+                        }
+                        return LRESULT(0);
+                    }
+                    ID_BTN_INCR => {
+                        GetWindowTextW(HANDLE_OPEN, privilege_name_ptr, 30);
+                        let percentage_to_open_str = text.to_string();
+                        PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
+                        let string = format!("{}", PERCENTAGE_TO_OPEN + 10);
+                        let str_ref = string.as_str();
+                        let mut w_str = WString::from_str(str_ref);
+                        let w_str = w_str.as_mut_ptr();
+                        SetWindowTextW(HANDLE_OPEN, PWSTR(w_str));
+                        return LRESULT(0);
+                    }
+                    ID_BTN_DECR => {
+                        GetWindowTextW(HANDLE_OPEN, privilege_name_ptr, 30);
+                        let percentage_to_open_str = text.to_string();
+                        PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
+                        let string = format!("{}", std::cmp::max(0, PERCENTAGE_TO_OPEN - 10));
+                        let str_ref = string.as_str();
+                        SetWindowTextW(HANDLE_OPEN, str_ref);
+                        return LRESULT(0);
+                    }
+                    _ => (),
                 }
-                ID_BTN_INCR => {
-                    GetWindowTextW(HANDLE_OPEN, privilege_name_ptr, 30);
-                    let percentage_to_open_str = text.to_string();
-                    PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
-                    let string = format!("{}", PERCENTAGE_TO_OPEN + 10);
-                    let str_ref = string.as_str();
-                    let mut w_str = WString::from_str(str_ref);
-                    let w_str = w_str.as_mut_ptr();
-                    SetWindowTextW(HANDLE_OPEN, PWSTR(w_str));
-                    LRESULT(0)
+
+                if HIWORD(wparam.0) as u32 == EN_SETFOCUS {
+                    //println!("wparam dword, hiword, and loword:\n{:b},\n{:b},\n{:b}", wparam.0, HIWORD(wparam.0), LOWORD(wparam.0));
+                    match LOWORD(wparam.0) as u32 {
+                        ID_TXT_TIME => {
+                            SetWindowTextW(HANDLE_TIME, "");
+                            return LRESULT(0);
+                        }
+                        ID_TXT_OPEN => {
+                            SetWindowTextW(HANDLE_OPEN, "");
+                            return LRESULT(0);
+                        }
+                        ID_TXT_STATUS => {
+                            SetWindowTextW(HANDLE_STATUS, "");
+                            return LRESULT(0);
+                        }
+                        _ => return LRESULT(0),
+                    }
                 }
-                ID_BTN_DECR => {
-                    GetWindowTextW(HANDLE_OPEN, privilege_name_ptr, 30);
-                    let percentage_to_open_str = text.to_string();
-                    PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
-                    let string = format!("{}", std::cmp::max(0, PERCENTAGE_TO_OPEN - 10));
-                    let str_ref = string.as_str();
-                    SetWindowTextW(HANDLE_OPEN, str_ref);
-                    LRESULT(0)
-                }
-                _ => LRESULT(0),
-            },
+
+                LRESULT(0)
+            }
             WM_HSCROLL => {
                 if HWND(lparam.0) == HANDLE_TB {
                     restart_timer(window);
@@ -358,4 +381,12 @@ unsafe fn CreateTrackbar(hwndDlg: HWND, iMin: u32, iMax: u32, iSelMin: u32, iSel
 
 pub fn make_long(a: u32, b: u32) -> i64 {
     (((((a as u64) & 0xffff) as u16) as u64) | ((((b as u64) & 0xffff) as u16) as u64) << 16) as i64
+}
+
+pub fn LOWORD(l: usize) -> u16 {
+    (l as u32 & 0xffff) as u16
+}
+
+pub fn HIWORD(l: usize) -> u16 {
+    ((l as u32 >> 16) & 0xffff) as u16
 }
