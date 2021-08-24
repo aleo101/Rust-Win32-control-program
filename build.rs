@@ -25,7 +25,7 @@ fn main() {
             UI::{
                 WindowsAndMessaging::{
                     DefWindowProcW, GetWindowTextW, CreateWindowExW, DefWindowProcA, DispatchMessageA, GetMessageW, GetWindowLongA,
-                    GetWindowLongPtrA, LoadCursorW, PeekMessageA, PostQuitMessage, RegisterClassExW,
+                    GetWindowLongPtrA, LoadCursorW, IsDialogMessageW, PeekMessageA, PostQuitMessage, RegisterClassExW,
                     SetWindowLongA, SetWindowTextW, SetWindowLongPtrA, GetWindowTextA, SendMessageW, ShowWindow, KillTimer, SetTimer,
                     TranslateMessage, DispatchMessageW, CREATESTRUCTA, CW_USEDEFAULT, IDC_HAND, MSG,
                     SIZE_MINIMIZED, WINDOW_LONG_PTR_INDEX, WM_DESTROY, WM_USER, IDC_ARROW, SYS_COLOR_INDEX, EN_SETFOCUS, ES_NUMBER,

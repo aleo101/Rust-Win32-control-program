@@ -55,7 +55,7 @@ fn main() {
         debug_assert!(atom != 0);
 
         let handle = CreateWindowExW(
-            WINDOW_EX_STYLE(0),
+            WS_EX_CONTROLPARENT,
             "window",
             "Class test",
             WS_OVERLAPPEDWINDOW,
@@ -73,8 +73,12 @@ fn main() {
         let mut message = MSG::default();
         ShowWindow(handle, SW_SHOW);
         while GetMessageW(&mut message, HWND(0), 0, 0).into() {
+            if IsDialogMessageW(handle, &mut message).as_bool(){
+
+            } else{ 
             TranslateMessage(&message);
             DispatchMessageW(&message);
+            }
         }
     }
 }
