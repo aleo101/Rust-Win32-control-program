@@ -61,8 +61,8 @@ fn main() {
             WS_OVERLAPPEDWINDOW,
             100,
             100,
-            1000,
-            500,
+            600,
+            300,
             HWND::NULL,
             HMENU::NULL,
             instance,
@@ -174,7 +174,7 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                     if TIME < 1 {
                         KillTimer(window, IDT_TIMER1 as usize);
                         EnableWindow(HANDLE_TIME, true);
-                        SetWindowTextW(HANDLE_TIME, "0");
+                        SetWindowTextW(HANDLE_TIME, "");
                     } else {
                         let string = TIME.to_string();
                         let str_ref = string.as_str();
@@ -209,7 +209,7 @@ unsafe fn reset_windows(hWnd: HWND) {
     let str_reset = "reset";
     SetWindowTextW(HANDLE_STATUS, str_reset);
     SetWindowTextW(HANDLE_TIME, "");
-    SetWindowTextW(HANDLE_OPEN, str_reset);
+    SetWindowTextW(HANDLE_OPEN, "");
     let hhand = HANDLE_TIME;
     if !IsWindowEnabled(hhand).as_bool() {
         KillTimer(hWnd, IDT_TIMER1 as usize);
@@ -238,7 +238,7 @@ unsafe fn AddControls(hWnd: HWND) {
         "Confirm",
         WS_VISIBLE | WS_CHILD,
         10,
-        100,
+        60,
         90,
         40,
         hWnd,
@@ -252,7 +252,7 @@ unsafe fn AddControls(hWnd: HWND) {
         "Set Time",
         WS_VISIBLE | WS_CHILD,
         10,
-        190,
+        110,
         90,
         40,
         hWnd,
@@ -267,7 +267,7 @@ unsafe fn AddControls(hWnd: HWND) {
         WS_VISIBLE | WS_CHILD,
         110,
         10,
-        500,
+        450,
         40,
         hWnd,
         HMENU(ID_TXT_STATUS as isize),
@@ -280,7 +280,7 @@ unsafe fn AddControls(hWnd: HWND) {
         "",
         WS_VISIBLE | WS_CHILD | WINDOW_STYLE(ES_NUMBER as u32),
         110,
-        100,
+        60,
         250,
         40,
         hWnd,
@@ -294,7 +294,7 @@ unsafe fn AddControls(hWnd: HWND) {
         "",
         WS_VISIBLE | WS_CHILD | WINDOW_STYLE(ES_NUMBER as u32),
         110,
-        190,
+        110,
         250,
         40,
         hWnd,
@@ -308,7 +308,7 @@ unsafe fn AddControls(hWnd: HWND) {
         "decr",
         WS_VISIBLE | WS_CHILD,
         370,
-        100,
+        60,
         90,
         40,
         hWnd,
@@ -322,7 +322,7 @@ unsafe fn AddControls(hWnd: HWND) {
         "incr",
         WS_VISIBLE | WS_CHILD,
         470,
-        100,
+        60,
         90,
         40,
         hWnd,
@@ -351,17 +351,12 @@ unsafe fn CreateTrackbar(hwndDlg: HWND, iMin: u32, iMax: u32, iSelMin: u32, iSel
     InitCommonControls();
 
     let hwndTrack: HWND = CreateWindowExW(
-        WINDOW_EX_STYLE(0),  // no extended styles
-        "msctls_trackbar32", // class name
-        "Trackbar Control",  // title (caption)
-        WS_CHILD
-            | WS_VISIBLE
-            | WINDOW_STYLE { 0: TBS_AUTOTICKS }
-            | WINDOW_STYLE {
-                0: TBS_ENABLESELRANGE,
-            }, // style
+        WINDOW_EX_STYLE(0),                                        // no extended styles
+        "msctls_trackbar32",                                       // class name
+        "Trackbar Control",                                        // title (caption)
+        WS_CHILD | WS_VISIBLE | WINDOW_STYLE { 0: TBS_AUTOTICKS }, // style
         370,
-        190, // position
+        110, // position
         200,
         30,                           // size
         hwndDlg,                      // parent window
