@@ -7,9 +7,10 @@ mod bindings {
 use std::{collections::HashMap, mem::size_of};
 
 use bindings::Windows::Win32::{
-    Foundation::*, System::LibraryLoader::*, UI::Controls::*, UI::KeyboardAndMouseInput::*,
-    UI::WindowsAndMessaging::*,
+    Foundation::*, Graphics::Gdi::*, System::LibraryLoader::*, UI::Controls::*,
+    UI::KeyboardAndMouseInput::*, UI::WindowsAndMessaging::*,
 };
+use native_windows_gui::enable_visual_styles;
 use std::str;
 use winsafe::WString;
 
@@ -34,6 +35,7 @@ static mut HANDLE_STATUS: HWND = HWND::NULL;
 static mut HANDLE_TB: HWND = HWND::NULL;
 
 fn main() {
+    enable_visual_styles();
     unsafe {
         let instance = GetModuleHandleW(None);
         debug_assert!(instance.0 != 0);
@@ -41,8 +43,9 @@ fn main() {
         let wc = WNDCLASSEXW {
             cbSize: size_of::<WNDCLASSEXW>() as u32,
             style: CS_HREDRAW | CS_VREDRAW,
-            hCursor: LoadCursorW(None, IDC_HAND),
+            hCursor: LoadCursorW(None, IDC_ARROW),
             hInstance: instance,
+            hbrBackground: HBRUSH(COLOR_WINDOW.0 as isize),
             lpszClassName: PWSTR(WString::from_str("window").as_mut_ptr()),
             lpfnWndProc: Some(wndproc),
             ..Default::default()
@@ -205,7 +208,7 @@ unsafe fn restart_timer(window: HWND) {
 unsafe fn reset_windows(hWnd: HWND) {
     let str_reset = "reset";
     SetWindowTextW(HANDLE_STATUS, str_reset);
-    SetWindowTextW(HANDLE_TIME, "0");
+    SetWindowTextW(HANDLE_TIME, "");
     SetWindowTextW(HANDLE_OPEN, str_reset);
     let hhand = HANDLE_TIME;
     if !IsWindowEnabled(hhand).as_bool() {
@@ -215,8 +218,6 @@ unsafe fn reset_windows(hWnd: HWND) {
 }
 
 unsafe fn AddControls(hWnd: HWND) {
-    let name = "0";
-
     HANDLE_RST = CreateWindowExW(
         WINDOW_EX_STYLE(0),
         "Button",
@@ -262,7 +263,7 @@ unsafe fn AddControls(hWnd: HWND) {
     HANDLE_STATUS = CreateWindowExW(
         WS_EX_CLIENTEDGE,
         "edit",
-        name,
+        "",
         WS_VISIBLE | WS_CHILD,
         110,
         10,
@@ -276,7 +277,7 @@ unsafe fn AddControls(hWnd: HWND) {
     HANDLE_OPEN = CreateWindowExW(
         WS_EX_CLIENTEDGE,
         "edit",
-        "enter inc here",
+        "",
         WS_VISIBLE | WS_CHILD | WINDOW_STYLE(ES_NUMBER as u32),
         110,
         100,
@@ -290,7 +291,7 @@ unsafe fn AddControls(hWnd: HWND) {
     HANDLE_TIME = CreateWindowExW(
         WS_EX_CLIENTEDGE,
         "edit",
-        "enter time here",
+        "",
         WS_VISIBLE | WS_CHILD | WINDOW_STYLE(ES_NUMBER as u32),
         110,
         190,
@@ -328,6 +329,20 @@ unsafe fn AddControls(hWnd: HWND) {
         HMENU(ID_BTN_INCR as isize),
         GetModuleHandleW(None),
         std::ptr::null_mut(),
+    );
+    let timer_txt_ptr = WString::from_str("Enter seconds...").as_mut_ptr();
+    let incr_open_txt_ptr = WString::from_str("Enter number to increment...").as_mut_ptr();
+    SendMessageW(
+        HANDLE_TIME,
+        EM_SETCUEBANNER,
+        WPARAM(1),
+        LPARAM(timer_txt_ptr as isize),
+    );
+    SendMessageW(
+        HANDLE_OPEN,
+        EM_SETCUEBANNER,
+        WPARAM(1),
+        LPARAM(incr_open_txt_ptr as isize),
     );
     HANDLE_TB = CreateTrackbar(hWnd, 10, 200, 10, 200);
 }

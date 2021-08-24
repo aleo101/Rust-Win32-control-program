@@ -15,7 +15,7 @@ fn main() {
                     DXGI_ERROR_UNSUPPORTED, DXGI_FORMAT, DXGI_PRESENT_TEST,
                     DXGI_USAGE_RENDER_TARGET_OUTPUT,
                 },
-                Gdi::{BeginPaint, EndPaint, PAINTSTRUCT},
+                Gdi::{BeginPaint, EndPaint, PAINTSTRUCT, HBRUSH},
             },
             System::{
                 LibraryLoader::GetModuleHandleW,
@@ -32,8 +32,9 @@ fn main() {
                 },
                 KeyboardAndMouseInput::{IsWindowEnabled, EnableWindow},
                 Controls::{InitCommonControls, TBS_AUTOTICKS, TBS_ENABLESELRANGE, TBM_SETRANGE, TBM_SETPAGESIZE,
-                    TBM_SETTICFREQ,TBM_SETSEL,TBM_SETPOS,},
+                    TBM_SETTICFREQ,TBM_SETSEL,TBM_SETPOS, EM_SETCUEBANNER},
             },
+
         },
     };
 }
