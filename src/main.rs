@@ -108,6 +108,20 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                         if IsWindowEnabled(hhand).as_bool() {
                             EnableWindow(hhand, false);
                             SetTimer(window, IDT_TIMER1 as usize, 1000, None);
+                            let lptans_ptr: *mut BOOL = &mut BOOL(1);
+                            let cnt_int =
+                                GetDlgItemInt(window, ID_TXT_TIME as i32, lptans_ptr, false);
+                            SendMessageW(
+                                HANDLE_TB,
+                                TBM_SETSEL,
+                                WPARAM(1), // redraw flag
+                                LPARAM(make_long(0, cnt_int) as isize),
+                            );
+                            if (*lptans_ptr).as_bool() {
+                                println!("True, should be set");
+                            } else {
+                                println!("False, something went wrong.");
+                            }
                         } else {
                             KillTimer(window, IDT_TIMER1 as usize);
                             EnableWindow(hhand, true);
@@ -347,17 +361,20 @@ unsafe fn AddControls(hWnd: HWND) {
         WPARAM(1),
         LPARAM(incr_open_txt_ptr as isize),
     );
-    HANDLE_TB = CreateTrackbar(hWnd, 10, 200, 10, 200);
+    HANDLE_TB = CreateTrackbar(hWnd, 10, 200, 10);
 }
 
-unsafe fn CreateTrackbar(hwndDlg: HWND, iMin: u32, iMax: u32, iSelMin: u32, iSelMax: u32) -> HWND {
+unsafe fn CreateTrackbar(hwndDlg: HWND, iMin: u32, iMax: u32, iSelMin: u32) -> HWND {
     InitCommonControls();
 
     let hwndTrack: HWND = CreateWindowExW(
-        WINDOW_EX_STYLE(0),                                        // no extended styles
-        "msctls_trackbar32",                                       // class name
-        "Trackbar Control",                                        // title (caption)
-        WS_CHILD | WS_VISIBLE | WINDOW_STYLE { 0: TBS_AUTOTICKS }, // style
+        WINDOW_EX_STYLE(0),  // no extended styles
+        "msctls_trackbar32", // class name
+        "Trackbar Control",  // title (caption)
+        WS_CHILD
+            | WS_VISIBLE
+            | WINDOW_STYLE(TBS_ENABLESELRANGE)
+            | WINDOW_STYLE { 0: TBS_AUTOTICKS }, // style
         370,
         110, // position
         200,
@@ -376,12 +393,7 @@ unsafe fn CreateTrackbar(hwndDlg: HWND, iMin: u32, iMax: u32, iSelMin: u32, iSel
     SendMessageW(hwndTrack, TBM_SETPAGESIZE, WPARAM(0), LPARAM(10));
 
     SendMessageW(hwndTrack, TBM_SETTICFREQ, WPARAM(10), LPARAM(0));
-    SendMessageW(
-        hwndTrack,
-        TBM_SETSEL,
-        WPARAM(0), // redraw flag
-        LPARAM(make_long(iSelMin, iSelMax) as isize),
-    );
+
     SendMessageW(
         hwndTrack,
         TBM_SETPOS,
