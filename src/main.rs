@@ -19,7 +19,7 @@ const ID_TXT_OPEN: u32 = 3;
 const ID_BTN_RST: u32 = 4;
 const ID_BTN_CNFM: u32 = 5;
 const ID_TXT_TIME: u32 = 6;
-const ID_BTN_ST: u32 = 7;
+const ID_BTN_SET_TIME: u32 = 7;
 const ID_BTN_INCR: u32 = 8;
 const ID_BTN_DECR: u32 = 9;
 const IDT_TIMER1: u32 = 10;
@@ -97,27 +97,29 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                     }
                     ID_BTN_CNFM => {
                         GetWindowTextW(HANDLE_OPEN, privilege_name_ptr, 30);
-                        restart_timer(window);
                         SetWindowTextW(HANDLE_TIME, privilege_name_ptr);
+                        restart_timer(window);
                         let percentage_to_open_str = text.to_string();
                         PERCENTAGE_TO_OPEN = percentage_to_open_str.parse::<i32>().unwrap_or(0);
                         return LRESULT(0);
                     }
-                    ID_BTN_ST => {
+                    ID_BTN_SET_TIME => {
                         let hhand = HANDLE_TIME;
                         if IsWindowEnabled(hhand).as_bool() {
+                            // Disable window.
                             EnableWindow(hhand, false);
+                            // Set timer.
                             SetTimer(window, IDT_TIMER1 as usize, 1000, None);
-                            let lptans_ptr: *mut BOOL = &mut BOOL(1);
+                            let lptrans_ptr: *mut BOOL = &mut BOOL(1);
                             let cnt_int =
-                                GetDlgItemInt(window, ID_TXT_TIME as i32, lptans_ptr, false);
+                                GetDlgItemInt(window, ID_TXT_TIME as i32, lptrans_ptr, false);
                             SendMessageW(
                                 HANDLE_TB,
                                 TBM_SETSEL,
                                 WPARAM(1), // redraw flag
                                 LPARAM(make_long(0, cnt_int) as isize),
                             );
-                            if (*lptans_ptr).as_bool() {
+                            if (*lptrans_ptr).as_bool() {
                                 println!("True, should be set");
                             } else {
                                 println!("False, something went wrong.");
@@ -150,25 +152,28 @@ extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: L
                     }
                     _ => (),
                 }
-
-                if HIWORD(wparam.0) as u32 == EN_SETFOCUS {
-                    //println!("wparam dword, hiword, and loword:\n{:b},\n{:b},\n{:b}", wparam.0, HIWORD(wparam.0), LOWORD(wparam.0));
-                    match LOWORD(wparam.0) as u32 {
-                        ID_TXT_TIME => {
-                            SetWindowTextW(HANDLE_TIME, "");
-                            return LRESULT(0);
-                        }
-                        ID_TXT_OPEN => {
-                            SetWindowTextW(HANDLE_OPEN, "");
-                            return LRESULT(0);
-                        }
-                        ID_TXT_STATUS => {
-                            SetWindowTextW(HANDLE_STATUS, "");
-                            return LRESULT(0);
-                        }
-                        _ => return LRESULT(0),
-                    }
-                }
+                /*
+                 *  The following lines erase the currently-focused edit control's text.
+                 *  I don't wish to have this functionality at the moment.
+                 */
+                // if HIWORD(wparam.0) as u32 == EN_SETFOCUS {
+                //     //println!("wparam dword, hiword, and loword:\n{:b},\n{:b},\n{:b}", wparam.0, HIWORD(wparam.0), LOWORD(wparam.0));
+                //     match LOWORD(wparam.0) as u32 {
+                //         ID_TXT_TIME => {
+                //             SetWindowTextW(HANDLE_TIME, "");
+                //             return LRESULT(0);
+                //         }
+                //         ID_TXT_OPEN => {
+                //             SetWindowTextW(HANDLE_OPEN, "");
+                //             return LRESULT(0);
+                //         }
+                //         ID_TXT_STATUS => {
+                //             SetWindowTextW(HANDLE_STATUS, "");
+                //             return LRESULT(0);
+                //         }
+                //         _ => return LRESULT(0),
+                //     }
+                // }
 
                 LRESULT(0)
             }
@@ -273,7 +278,7 @@ unsafe fn AddControls(hWnd: HWND) {
         90,
         40,
         hWnd,
-        HMENU(ID_BTN_ST as isize),
+        HMENU(ID_BTN_SET_TIME as isize),
         GetModuleHandleW(None),
         std::ptr::null_mut(),
     );
@@ -349,6 +354,7 @@ unsafe fn AddControls(hWnd: HWND) {
     );
     let timer_txt_ptr = WString::from_str("Enter seconds...").as_mut_ptr();
     let incr_open_txt_ptr = WString::from_str("Enter number to increment...").as_mut_ptr();
+    // Set the cue message of the "TIME" and "OPEN" edit control text boxes.
     SendMessageW(
         HANDLE_TIME,
         EM_SETCUEBANNER,
@@ -361,6 +367,8 @@ unsafe fn AddControls(hWnd: HWND) {
         WPARAM(1),
         LPARAM(incr_open_txt_ptr as isize),
     );
+
+    // Create the scroll bar that cant set the countdown time.
     HANDLE_TB = CreateTrackbar(hWnd, 10, 200, 10);
 }
 
